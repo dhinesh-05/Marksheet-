@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mark Sheet Generator</title>
+    <style>
+        /* --- CSS for Professional Blue/White Theme & Responsiveness --- */
+        :root {
+            --primary-color: #4A90E2; 
+            --secondary-color: #FFFFFF;
+            --background-color: #F8F9FA;
+            --card-background: #FFFFFF;
+            --text-color: #333333;
+            --border-color: #CCCCCC;
+            --header-bg: #2C3E50; 
+            --header-text: #FFFFFF;
+            --border-radius: 6px;
+        }
+
+        body {
+            font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            background: var(--card-background);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            flex-grow: 1;
+        }
+
+        h1 {
+            color: var(--header-bg);
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 10px;
+            letter-spacing: 1.5px;
+            font-size: 1.5em; 
+        }
+        
+        /* Student Info Section */
+        #studentInfo {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background-color: #E9F1FC;
+        }
+
+        .input-row {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .input-group-half {
+            width: 100%;
+            margin-bottom: 0;
+        }
+
+        /* Dynamic Subject Input Area */
+        #subjectInputs {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .subject-group {
+            padding: 10px;
+            background: #f0f0f0; 
+            border-radius: 4px;
+            border-left: 5px solid var(--primary-color);
+            position: relative;
+        }
+        
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            border-radius: 4px;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+
+        /* Controls Styling */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            margin-bottom: 20px;
+        }
+
+        .controls button, #addSubjectBtn {
+            padding: 12px;
+            margin: 5px 0;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            font-weight: bold;
+        }
+
+        #calculateBtn { background-color: var(--primary-color); color: var(--header-text); }
+        #addSubjectBtn { background-color: #5CB85C; color: white; }
+        #printBtn, #downloadBtn { background-color: #6C757D; color: var(--header-text); }
+
+        /* Mark Sheet & Summary Styling */
+        #markSheet {
+            width: 100%;
+            font-size: 0.9em;
+        }
+
+        /* Unique Summary Badge - Mobile Layout */
+        #summary {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+            padding: 15px;
+        }
+
+        .summary-item {
+            width: 100%;
+            border-radius: var(--border-radius);
+            padding: 10px;
+        }
+
+        /* Footer Style */
+        .footer {
+            width: 100%;
+            max-width: 1000px;
+            padding: 10px 0;
+            text-align: center;
+            font-size: 0.8em;
+            color: #6C757D;
+            border-top: 1px solid var(--border-color);
+            margin-top: auto;
+        }
+        
+        /* --- Media Query for Desktop (Windows) / Larger Screens --- */
+        @media (min-width: 768px) {
+            h1 { font-size: 2em; }
+            .container { padding: 30px; }
+            .input-row { flex-direction: row; }
+            .input-group-half { flex: 1; }
+            #subjectInputs {
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 20px;
+            }
+            .controls { flex-direction: row; justify-content: center; }
+            .controls button { margin: 0 10px; }
+            #summary { flex-direction: row; justify-content: space-around; }
+            .summary-item { border-radius: 50%; min-width: 100px; max-width: 150px; }
+        }
+        
+        /* --- Print Styles --- */
+        /* IMPORTANT: This style hides everything not in the print target area */
+        @media print {
+            body * {
+                visibility: hidden; /* Hide everything by default */
+            }
+            #resultArea, #resultArea * {
+                visibility: visible; /* Make only the result area and its contents visible */
+            }
+            #resultArea {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                /* Ensure background colors and text colors are print-friendly */
+                background: white; 
+                color: black;
+            }
+            #markSheet th, #markSheet td { border-color: #999; color: black; }
+            #markSheet thead th { background-color: #E0E0E0; color: black; }
+            /* The footer and other elements outside resultArea will remain hidden */
+        }
+
+        /* General styles continued */
+        input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2); }
+        .remove-subject { position: absolute; top: 5px; right: 5px; background: none; border: none; color: #d9534f; cursor: pointer; font-weight: bold; font-size: 1.2em; padding: 5px; line-height: 1; transition: color 0.2s; }
+        .remove-subject:hover { color: #c9302c; }
+        .student-title { font-size: 20px; color: var(--header-bg); margin-top: 0; margin-bottom: 15px; padding-bottom: 5px; border-bottom: 1px dotted #ccc; }
+        .student-title span { font-weight: 600; color: var(--primary-color); }
+        #totalBadge { background-color: #DDEBFD; } 
+        #averageBadge { background-color: #D6F5D6; } 
+        #gradeBadge { background-color: #FFEBCC; } 
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>📊 Mark Sheet Generator</h1>
+        
+        <div id="studentInfo">
+            <h2>Student Details</h2>
+            <div class="input-row">
+                <div class="input-group-half">
+                    <label for="studentName">Student Name</label>
+                    <input type="text" id="studentName" placeholder="Enter student's full name" required>
+                </div>
+                <div class="input-group-half">
+                    <label for="regNumber">Register Number</label>
+                    <input type="text" id="regNumber" placeholder="Enter registration ID" required>
+                </div>
+            </div>
+        </div>
+        
+        <h2>Subject Marks Input</h2>
+        <div id="subjectInputs">
+            </div>
+        
+        <button id="addSubjectBtn">+ Add New Subject</button>
+
+        <div class="controls">
+            <button id="calculateBtn">Calculate Mark Sheet</button>
+            <button id="printBtn" disabled>🖨️ Print Mark Sheet</button>
+            <button id="downloadBtn" disabled>⬇️ Download PDF</button>
+        </div>
+
+        <div id="resultArea" style="display: none;">
+            <h2 class="student-title">
+                Results for: <span id="outputStudentName">N/A</span> 
+                (Reg No: <span id="outputRegNumber">N/A</span>)
+            </h2>
+            <table id="markSheet">
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Marks Secured</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="markSheetBody">
+                    </tbody>
+            </table>
+
+            <div id="summary">
+                <div class="summary-item" id="totalBadge">
+                    <h3>Total Marks</h3>
+                    <p id="totalValue">0</p>
+                </div>
+                <div class="summary-item" id="averageBadge">
+                    <h3>Average (%)</h3>
+                    <p id="averageValue">0.00%</p>
+                </div>
+                <div class="summary-item" id="gradeBadge">
+                    <h3>Final Grade</h3>
+                    <p id="gradeValue">N/A</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <footer class="footer">
+        Developed by M Dhinesh
+    </footer>
+
+    <script>
+        // --- JavaScript Logic ---
+        const resultArea = document.getElementById('resultArea');
+        const markSheetBody = document.getElementById('markSheetBody');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const printBtn = document.getElementById('printBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const studentNameInput = document.getElementById('studentName');
+        const regNumberInput = document.getElementById('regNumber'); 
+        const outputStudentName = document.getElementById('outputStudentName');
+        const outputRegNumber = document.getElementById('outputRegNumber'); 
+        const subjectInputsContainer = document.getElementById('subjectInputs');
+        const addSubjectBtn = document.getElementById('addSubjectBtn');
+
+        let subjectCount = 0; 
+
+        function addSubjectInput(defaultName = '') {
+            subjectCount++;
+            const subjectId = `subject-${subjectCount}`;
+            const markId = `marks-${subjectCount}`;
+
+            const subjectGroup = document.createElement('div');
+            subjectGroup.className = 'subject-group';
+            subjectGroup.id = subjectId;
+            subjectGroup.innerHTML = `
+                <button type="button" class="remove-subject" onclick="removeSubjectInput('${subjectId}')">✖</button>
+                <label for="${subjectId}-name">Subject Name</label>
+                <input type="text" id="${subjectId}-name" class="subject-name-input" value="${defaultName}" placeholder="e.g., Physics" required>
+                
+                <label for="${markId}">Marks Secured (out of 100)</label>
+                <input type="number" id="${markId}" class="subject-mark-input" value="0" min="0" max="100" required>
+            `;
+            subjectInputsContainer.appendChild(subjectGroup);
+        }
+
+        function removeSubjectInput(id) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.remove();
+                resultArea.style.display = 'none';
+                printBtn.disabled = true;
+                downloadBtn.disabled = true;
+            }
+        }
+
+        window.removeSubjectInput = removeSubjectInput; 
+        
+        function calculateGrade(avg) {
+            if (avg >= 90) return 'A+ (Excellent)';
+            if (avg >= 80) return 'A (Very Good)';
+            if (avg >= 70) return 'B (Good)';
+            if (avg >= 60) return 'C (Average)';
+            if (avg >= 50) return 'D (Pass)';
+            return 'F (Fail)';
+        }
+        
+        function generateMarkSheet() {
+            const studentName = studentNameInput.value.trim();
+            const regNumber = regNumberInput.value.trim(); 
+            const subjectGroups = subjectInputsContainer.querySelectorAll('.subject-group');
+
+            if (studentName === "" || regNumber === "") {
+                alert("Please enter both the student's Name and Register Number.");
+                if (studentName === "") studentNameInput.focus();
+                else regNumberInput.focus();
+                return;
+            }
+
+            if (subjectGroups.length === 0) {
+                alert("Please add at least one subject and its marks.");
+                return;
+            }
+            
+            outputStudentName.textContent = studentName; 
+            outputRegNumber.textContent = regNumber; 
+
+            let totalMarks = 0;
+            let allMarksValid = true;
+            let subjectsProcessed = 0;
+            markSheetBody.innerHTML = ''; 
+
+            subjectGroups.forEach(group => {
+                const subjectNameInput = group.querySelector('.subject-name-input');
+                const markInput = group.querySelector('.subject-mark-input');
+                
+                const subjectName = subjectNameInput.value.trim();
+                let marks = parseInt(markInput.value);
+
+                if (subjectName === "") {
+                    alert("Please enter a name for all subjects.");
+                    subjectNameInput.focus();
+                    allMarksValid = false;
+                    return;
+                }
+
+                if (isNaN(marks) || marks < 0 || marks > 100) {
+                    alert(`Please enter a valid mark (0-100) for ${subjectName}.`);
+                    markInput.focus();
+                    allMarksValid = false;
+                    return; 
+                }
+
+                totalMarks += marks;
+                subjectsProcessed++;
+
+                const status = marks >= 50 ? 'PASS' : 'FAIL';
+                const statusColor = marks >= 50 ? 'green' : '#d9534f'; 
+                const row = markSheetBody.insertRow();
+                row.innerHTML = `
+                    <td>${subjectName}</td>
+                    <td>${marks}/100</td>
+                    <td style="color: ${statusColor}; font-weight: 600;">${status}</td>
+                `;
+            });
+
+            if (!allMarksValid) {
+                resultArea.style.display = 'none';
+                printBtn.disabled = true;
+                downloadBtn.disabled = true;
+                return; 
+            }
+
+            const average = totalMarks / subjectsProcessed;
+            const grade = calculateGrade(average);
+
+            document.getElementById('totalValue').textContent = totalMarks;
+            document.getElementById('averageValue').textContent = average.toFixed(2) + '%';
+            document.getElementById('gradeValue').textContent = grade;
+            
+            let gradeColor;
+            if (average >= 70) gradeColor = '#5CB85C'; 
+            else if (average >= 50) gradeColor = '#F0AD4E'; 
+            else gradeColor = '#D9534F'; 
+            document.getElementById('gradeBadge').style.backgroundColor = gradeColor;
+            document.getElementById('gradeBadge').querySelector('p').style.color = 'white'; 
+
+            resultArea.style.display = 'block';
+            printBtn.disabled = false;
+            downloadBtn.disabled = false;
+        }
+
+        /**
+         * IMPORTANT: Modified function to print only the resultArea.
+         * The CSS @media print block handles the isolation.
+         */
+        function printMarkSheet() {
+            // Check if the result area is displayed before printing
+            if (resultArea.style.display === 'block') {
+                window.print();
+            } else {
+                alert("Please calculate the mark sheet first before printing.");
+            }
+        }
+
+        function downloadMarkSheet() {
+            alert("Download feature requires an external library (e.g., jsPDF). Please use the 'Print Mark Sheet' button and select 'Save as PDF' from your browser's print options for a high-quality document.");
+        }
+
+        // --- Event Listeners and Initial Setup ---
+        calculateBtn.addEventListener('click', generateMarkSheet);
+        printBtn.addEventListener('click', printMarkSheet);
+        downloadBtn.addEventListener('click', downloadMarkSheet);
+        addSubjectBtn.addEventListener('click', () => addSubjectInput(''));
+
+        addSubjectInput('Mathematics');
+        addSubjectInput('Science');
+        addSubjectInput('English');
+
+    </script>
+</body>
+</html>
